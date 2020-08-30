@@ -2,7 +2,7 @@ name: docker-build
 
 on:
   schedule:
-    - cron: '5/* * * * *' # run occasionally to check if new release on boypt/simple-torrent
+    - cron: '0 * * * *' # run occasionally to check if new release on boypt/simple-torrent
   push:
     branches: master
     tags:
@@ -43,6 +43,17 @@ jobs:
             --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
             --build-arg VCS_REF=${GITHUB_SHA::8} \
             ${TAGS} --file ./Dockerfile ./
+      - 
+        name: push README to Dockerhub
+        uses: christian-korneck/update-container-description-action@v1
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASS: ${{ secrets.DOCKER_PASSWORD }}
+        with:
+          destination_container_repo: zikeji/arch-simpletorrentvpn
+          provider: dockerhub
+          short_description: 'Arch Linux base by binhex running SimpleTorrent, OpenVPN and Privoxy'
+          readme_file: 'README.md'
       -
         name: Set up Docker Buildx
         uses: crazy-max/ghaction-docker-buildx@v3
