@@ -1,7 +1,8 @@
 # arch-simpletorrentvpn
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/zikeji/arch-simpletorrentvpn.svg)][dockerhub]
-[![Image Size](https://images.microbadger.com/badges/image/zikeji/arch-simpletorrentvpn.svg)][dockerhub]
+[![Docker Pulls](https://img.shields.io/docker/pulls/zikeji/arch-simpletorrentvpn)][dockerhub]
+[![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/zikeji/arch-simpletorrentvpn)][dockerhub]
+[![Docker Stars](https://img.shields.io/docker/stars/zikeji/arch-simpletorrentvpn)][dockerhub]
 
 [dockerhub]: https://hub.docker.com/r/zikeji/arch-simpletorrentvpn/
 
