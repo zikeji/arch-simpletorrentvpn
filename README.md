@@ -3,6 +3,8 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/zikeji/arch-simpletorrentvpn.svg)][dockerhub]
 [![Image Size](https://images.microbadger.com/badges/image/zikeji/arch-simpletorrentvpn.svg)][dockerhub]
 
+[dockerhub]: https://hub.docker.com/r/zikeji/arch-simpletorrentvpn/
+
 ## Special Thanks
 
 This Docker image is based on the amazing [arch-delugevpn](https://github.com/binhex/arch-delugevpn) image and it's core components created by [binhex](https://github.com/binhex).
