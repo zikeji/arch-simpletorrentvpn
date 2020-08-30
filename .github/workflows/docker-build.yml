@@ -20,7 +20,7 @@ jobs:
         id: prepare
         run: |
           DOCKER_IMAGE=zikeji/arch-simpletorrentvpn
-          DOCKER_PLATFORMS=linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/386,linux/ppc64le,linux/s390x
+          DOCKER_PLATFORMS=linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/386
           VERSION=latest
 
           if [[ $GITHUB_REF == refs/tags/* ]]; then
@@ -75,6 +75,6 @@ jobs:
           docker buildx build --output "type=image,push=true" ${{ steps.prepare.outputs.buildx_args }}
       -
         name: Inspect image
-        if: always() && github.event_name != 'pull_request'
+        if: success() && github.event_name != 'pull_request'
         run: |
           docker buildx imagetools inspect ${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}
