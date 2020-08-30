@@ -13,3 +13,5 @@ notes.txt
 
 # ignore virtual env
 venv
+
+/act
