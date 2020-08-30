@@ -32,20 +32,6 @@ echo "[info] Docker network defined as ${docker_network_cidr}"
 # ip route
 ###
 
-# split comma separated string into list from LAN_NETWORK env variable
-IFS=',' read -ra lan_network_list <<< "${LAN_NETWORK}"
-
-# process lan networks in the list
-for lan_network_item in "${lan_network_list[@]}"; do
-
-	# strip whitespace from start and end of lan_network_item
-	lan_network_item=$(echo "${lan_network_item}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
-
-	echo "[info] Adding ${lan_network_item} as route via docker ${docker_interface}"
-	ip route add "${lan_network_item}" via "${DEFAULT_GATEWAY}" dev "${docker_interface}"
-
-done
-
 echo "[info] ip route defined as follows..."
 echo "--------------------"
 ip route
@@ -66,10 +52,10 @@ if [[ $iptable_mangle_exit_code == 0 ]]; then
 
 	echo "[info] iptable_mangle support detected, adding fwmark for tables"
 
-	# setup route for deluge webui using set-mark to route traffic for port 8112 to eth0
-	echo "8112    webui" >> /etc/iproute2/rt_tables
-	ip rule add fwmark 1 table webui
-	ip route add default via $DEFAULT_GATEWAY table webui
+	# setup route for simpletorrent using set-mark to route traffic for port 3000 to eth0
+	echo "3000    simpletorrent" >> /etc/iproute2/rt_tables
+	ip rule add fwmark 1 table simpletorrent
+	ip route add default via $DEFAULT_GATEWAY table simpletorrent
 
 fi
 
@@ -88,19 +74,17 @@ iptables -A INPUT -s "${docker_network_cidr}" -d "${docker_network_cidr}" -j ACC
 # accept input to vpn gateway
 iptables -A INPUT -i "${docker_interface}" -p $VPN_PROTOCOL --sport $VPN_PORT -j ACCEPT
 
-# accept input to deluge Web UI port 8112
-iptables -A INPUT -i "${docker_interface}" -p tcp --dport 8112 -j ACCEPT
-iptables -A INPUT -i "${docker_interface}" -p tcp --sport 8112 -j ACCEPT
+# accept input to SimpleTorrent Web UI port 3000
+iptables -A INPUT -i "${docker_interface}" -p tcp --dport 3000 -j ACCEPT
+iptables -A INPUT -i "${docker_interface}" -p tcp --sport 3000 -j ACCEPT
 
 # additional port list for scripts or container linking
 if [[ ! -z "${ADDITIONAL_PORTS}" ]]; then
-
 	# split comma separated string into list from ADDITIONAL_PORTS env variable
 	IFS=',' read -ra additional_port_list <<< "${ADDITIONAL_PORTS}"
 
 	# process additional ports in the list
 	for additional_port_item in "${additional_port_list[@]}"; do
-
 		# strip whitespace from start and end of additional_port_item
 		additional_port_item=$(echo "${additional_port_item}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
 
@@ -109,26 +93,8 @@ if [[ ! -z "${ADDITIONAL_PORTS}" ]]; then
 		# accept input to additional port for "${docker_interface}"
 		iptables -A INPUT -i "${docker_interface}" -p tcp --dport "${additional_port_item}" -j ACCEPT
 		iptables -A INPUT -i "${docker_interface}" -p tcp --sport "${additional_port_item}" -j ACCEPT
-
 	done
-
 fi
-
-# process lan networks in the list
-for lan_network_item in "${lan_network_list[@]}"; do
-
-	# strip whitespace from start and end of lan_network_item
-	lan_network_item=$(echo "${lan_network_item}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
-
-	# accept input to deluge daemon port - used for lan access
-	iptables -A INPUT -i "${docker_interface}" -s "${lan_network_item}" -p tcp --dport 58846 -j ACCEPT
-
-	# accept input to privoxy if enabled
-	if [[ $ENABLE_PRIVOXY == "yes" ]]; then
-		iptables -A INPUT -i "${docker_interface}" -p tcp -s "${lan_network_item}" -d "${docker_network_cidr}" -j ACCEPT
-	fi
-
-done
 
 # accept input icmp (ping)
 iptables -A INPUT -p icmp --icmp-type echo-reply -j ACCEPT
@@ -165,26 +131,22 @@ iptables -A OUTPUT -o "${docker_interface}" -p $VPN_PROTOCOL --dport $VPN_PORT -
 
 # if iptable mangle is available (kernel module) then use mark
 if [[ $iptable_mangle_exit_code == 0 ]]; then
-
-	# accept output from deluge-web port 8112 - used for external access
-	iptables -t mangle -A OUTPUT -p tcp --dport 8112 -j MARK --set-mark 1
-	iptables -t mangle -A OUTPUT -p tcp --sport 8112 -j MARK --set-mark 1
-
+	# accept output from SimpleTorrent port 3000 - used for external access
+	iptables -t mangle -A OUTPUT -p tcp --dport 3000 -j MARK --set-mark 1
+	iptables -t mangle -A OUTPUT -p tcp --sport 3000 -j MARK --set-mark 1
 fi
 
-# accept output from deluge-web port 8112 - used for lan access
-iptables -A OUTPUT -o "${docker_interface}" -p tcp --dport 8112 -j ACCEPT
-iptables -A OUTPUT -o "${docker_interface}" -p tcp --sport 8112 -j ACCEPT
+# accept output from SimpleTorrent port 3000 - used for lan access
+iptables -A OUTPUT -o "${docker_interface}" -p tcp --dport 3000 -j ACCEPT
+iptables -A OUTPUT -o "${docker_interface}" -p tcp --sport 3000 -j ACCEPT
 
 # additional port list for scripts or container linking
 if [[ ! -z "${ADDITIONAL_PORTS}" ]]; then
-
 	# split comma separated string into list from ADDITIONAL_PORTS env variable
 	IFS=',' read -ra additional_port_list <<< "${ADDITIONAL_PORTS}"
 
 	# process additional ports in the list
 	for additional_port_item in "${additional_port_list[@]}"; do
-
 		# strip whitespace from start and end of additional_port_item
 		additional_port_item=$(echo "${additional_port_item}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
 
@@ -193,26 +155,8 @@ if [[ ! -z "${ADDITIONAL_PORTS}" ]]; then
 		# accept output to additional port for lan interface
 		iptables -A OUTPUT -o "${docker_interface}" -p tcp --dport "${additional_port_item}" -j ACCEPT
 		iptables -A OUTPUT -o "${docker_interface}" -p tcp --sport "${additional_port_item}" -j ACCEPT
-
 	done
-
 fi
-
-# process lan networks in the list
-for lan_network_item in "${lan_network_list[@]}"; do
-
-	# strip whitespace from start and end of lan_network_item
-	lan_network_item=$(echo "${lan_network_item}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
-
-	# accept output to deluge daemon port - used for lan access
-	iptables -A OUTPUT -o "${docker_interface}" -d "${lan_network_item}" -p tcp --sport 58846 -j ACCEPT
-
-	# accept output from privoxy if enabled - used for lan access
-	if [[ $ENABLE_PRIVOXY == "yes" ]]; then
-		iptables -A OUTPUT -o "${docker_interface}" -p tcp -s "${docker_network_cidr}" -d "${lan_network_item}" -j ACCEPT
-	fi
-
-done
 
 # accept output for icmp (ping)
 iptables -A OUTPUT -p icmp --icmp-type echo-request -j ACCEPT

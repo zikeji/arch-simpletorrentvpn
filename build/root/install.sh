@@ -38,7 +38,7 @@ fi
 source upd.sh
 
 # define pacman packages
-pacman_packages="libtorrent-rasterbar openssl python-chardet python-dbus python-distro python-geoip python-idna python-mako python-pillow python-pyopenssl python-rencode python-service-identity python-setproctitle python-six python-future python-requests python-twisted python-xdg python-zope-interface xdg-utils libappindicator-gtk3 deluge"
+pacman_packages="jq yq ca-certificates openssl"
 
 # install compiled packages using pacman
 if [[ ! -z "${pacman_packages}" ]]; then
@@ -53,15 +53,6 @@ aur_packages=""
 
 # call aur install script (arch user repo)
 source aur.sh
-
-# tweaks
-####
-
-# create path to store deluge python eggs
-mkdir -p /home/nobody/.cache/Python-Eggs
-
-# remove permissions for group and other from the Python-Eggs folder
-chmod -R 700 /home/nobody/.cache/Python-Eggs
 
 # container perms
 ####
@@ -87,13 +78,6 @@ install_paths=$(echo "${install_paths}" | tr ',' ' ')
 
 # set permissions for container during build - Do NOT double quote variable for install_paths otherwise this will wrap space separated paths as a single string
 chmod -R 775 ${install_paths}
-
-# set permissions for python eggs to be a more restrictive 755, this prevents the warning message thrown by deluge on startup
-mkdir -p /home/nobody/.cache/Python-Eggs ; chmod -R 755 /home/nobody/.cache/Python-Eggs
-
-# disable built-in Deluge Plugin 'stats', as its currently broken in Deluge 2.x and causes log spam
-# see here for details https://dev.deluge-torrent.org/ticket/3310
-chmod 000 "/usr/lib/python3.8/site-packages/deluge/plugins/Stats-0.4-py3.8.egg"
 
 # create file with contents of here doc, note EOF is NOT quoted to allow us to expand current variable 'install_paths'
 # we use escaping to prevent variable expansion for PUID and PGID, as we want these expanded at runtime of init.sh
@@ -136,22 +120,6 @@ check_network=$(ifconfig | grep docker0 || true)
 # if network interface docker0 is present then we are running in host mode and thus must exit
 if [[ ! -z "${check_network}" ]]; then
 	echo "[crit] Network type detected as 'Host', this will cause major issues, please stop the container and switch back to 'Bridge' mode" | ts '%Y-%m-%d %H:%M:%.S' && exit 1
-fi
-
-export DELUGE_DAEMON_LOG_LEVEL=$(echo "${DELUGE_DAEMON_LOG_LEVEL}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
-if [[ ! -z "${DELUGE_DAEMON_LOG_LEVEL}" ]]; then
-	echo "[info] DELUGE_DAEMON_LOG_LEVEL defined as '${DELUGE_DAEMON_LOG_LEVEL}'" | ts '%Y-%m-%d %H:%M:%.S'
-else
-	echo "[info] DELUGE_DAEMON_LOG_LEVEL not defined,(via -e DELUGE_DAEMON_LOG_LEVEL), defaulting to 'info'" | ts '%Y-%m-%d %H:%M:%.S'
-	export DELUGE_DAEMON_LOG_LEVEL="info"
-fi
-
-export DELUGE_WEB_LOG_LEVEL=$(echo "${DELUGE_WEB_LOG_LEVEL}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
-if [[ ! -z "${DELUGE_WEB_LOG_LEVEL}" ]]; then
-	echo "[info] DELUGE_WEB_LOG_LEVEL defined as '${DELUGE_WEB_LOG_LEVEL}'" | ts '%Y-%m-%d %H:%M:%.S'
-else
-	echo "[info] DELUGE_WEB_LOG_LEVEL not defined,(via -e DELUGE_WEB_LOG_LEVEL), defaulting to 'info'" | ts '%Y-%m-%d %H:%M:%.S'
-	export DELUGE_WEB_LOG_LEVEL="info"
 fi
 
 export VPN_ENABLED=$(echo "${VPN_ENABLED}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
@@ -274,13 +242,6 @@ if [[ $VPN_ENABLED == "yes" ]]; then
 		echo "[crit] VPN_PROV not defined,(via -e VPN_PROV), exiting..." | ts '%Y-%m-%d %H:%M:%.S' && exit 1
 	fi
 
-	export LAN_NETWORK=$(echo "${LAN_NETWORK}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
-	if [[ ! -z "${LAN_NETWORK}" ]]; then
-		echo "[info] LAN_NETWORK defined as '${LAN_NETWORK}'" | ts '%Y-%m-%d %H:%M:%.S'
-	else
-		echo "[crit] LAN_NETWORK not defined (via -e LAN_NETWORK), exiting..." | ts '%Y-%m-%d %H:%M:%.S' && exit 1
-	fi
-
 	export NAME_SERVERS=$(echo "${NAME_SERVERS}" | sed -e 's~^[ \t]*~~;s~[ \t]*$~~')
 	if [[ ! -z "${NAME_SERVERS}" ]]; then
 		echo "[info] NAME_SERVERS defined as '${NAME_SERVERS}'" | ts '%Y-%m-%d %H:%M:%.S'
@@ -340,7 +301,7 @@ if [[ $VPN_ENABLED == "yes" ]]; then
 			echo "[info] ADDITIONAL_PORTS not defined (via -e ADDITIONAL_PORTS), skipping allow for custom incoming ports" | ts '%Y-%m-%d %H:%M:%.S'
 	fi
 
-	export APPLICATION="deluge"
+	export APPLICATION="simpletorrent"
 
 fi
 

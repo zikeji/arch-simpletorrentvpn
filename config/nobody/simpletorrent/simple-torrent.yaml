@@ -1,0 +1,15 @@
+autostart: true
+disableipv6: true
+donecmd: ""
+donecmdthreshold: 30s
+downloaddirectory: /downloads
+enableseeding: false
+enableupload: true
+incomingport: 50007
+obfspreferred: true
+obfsrequirepreferred: false
+proxyurl: ""
+scraperurl: https://raw.githubusercontent.com/boypt/simple-torrent/master/scraper-config.json
+seedratio: 1
+trackerlisturl: https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt
+watchdirectory: /torrents
