@@ -82,7 +82,7 @@ jobs:
             ${TAGS} --file ./Dockerfile ./
   buildx:
     needs: prepare_run
-    if: jobs.prepare_run.outputs.should_build == 'yes'
+    if: needs.prepare_run.outputs.should_build == 'yes'
     runs-on: ubuntu-latest
     steps:
       -
@@ -100,7 +100,7 @@ jobs:
       -
         name: Build
         run: |
-          docker buildx build --output "type=image,push=false" ${{ jobs.prepare_run.outputs.buildx_args }}
+          docker buildx build --output "type=image,push=false" ${{ needs.prepare_run.outputs.buildx_args }}
       -
         name: Login to DockerHub
         if: success() && github.event_name != 'pull_request'
@@ -112,9 +112,9 @@ jobs:
         name: Docker Buildx (push)
         if: success() && github.event_name != 'pull_request'
         run: |
-          docker buildx build --output "type=image,push=true" ${{ jobs.prepare_run.outputs.buildx_args }}
+          docker buildx build --output "type=image,push=true" ${{ needs.prepare_run.outputs.buildx_args }}
       -
         name: Inspect image
         if: success() && github.event_name != 'pull_request'
         run: |
-          docker buildx imagetools inspect ${{ jobs.prepare_run.outputs.docker_image }}:${{ jobs.prepare_run.outputs.version }}
+          docker buildx imagetools inspect ${{ needs.prepare_run.outputs.docker_image }}:${{ needs.prepare_run.outputs.version }}
