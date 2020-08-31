@@ -3,6 +3,7 @@ name: docker-build
 on:
   schedule:
     - cron: '0 * * * *' # run occasionally to check if new release on boypt/simple-torrent
+  workflow_dispatch: # same as schedule
   push:
     branches: master
     tags:
@@ -11,7 +12,7 @@ on:
 jobs:
   push_readme:
     runs-on: ubuntu-latest
-    if: github.event_name == "push"
+    if: github.event_name == 'push'
     steps:
       -
         name: Checkout repo
@@ -56,7 +57,7 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/v}
           fi
 
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          if [[ "${{ github.event_name }}" == "schedule" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             LATEST_REPO_VERSION=$(curl -sI https://github.com/boypt/simple-torrent/releases/latest | grep location | grep -E -o '[0-9\.]{5,}')
             LATEST_HUB_VERSION=$(curl https://hub.docker.com/v2/repositories/zikeji/arch-simpletorrentvpn/tags 2>/dev/null | tac | jq -r '[.results[] | select(.name | test("^[0-9]"))] | sort_by(.name | split(".") | map(tonumber)) | reverse | first | .name')
             if [[ "$LATEST_REPO_VERSION" == "$LATEST_HUB_VERSION" ]]; then
