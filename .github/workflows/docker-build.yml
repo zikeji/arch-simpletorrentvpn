@@ -54,14 +54,13 @@ jobs:
       -
         name: Cancel workflow run if needed
         uses: actions/github-script@v3
+        if: steps.prepare.outputs.should_cancel == 'yes'
         with:
           script: |
             const { owner, repo } = context.repo
-            if (context.steps.prepare.outputs.should_cancel === 'yes') {
-              console.log('Cancelling ...');
-              const run_id = "${{ github.run_id }}";
-              await github.actions.cancelWorkflowRun({ owner, repo, run_id });
-            }
+            console.log('Cancelling ...');
+            const run_id = "${{ github.run_id }}";
+            await github.actions.cancelWorkflowRun({ owner, repo, run_id });
       -
         name: Waiting for cancellation
         run: sleep 60
