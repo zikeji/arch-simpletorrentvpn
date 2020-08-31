@@ -11,6 +11,7 @@ on:
 
 jobs:
   push_readme:
+    name: Push README.md to DockerHub
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
@@ -29,6 +30,7 @@ jobs:
           short_description: 'Arch Linux base by binhex running SimpleTorrent, OpenVPN and Privoxy'
           readme_file: 'README.md'
   prepare_run:
+    name: Prepare variables for build and run checks
     runs-on: ubuntu-latest
     outputs:
       docker_image: ${{ steps.prepare.outputs.docker_image }}
@@ -82,10 +84,14 @@ jobs:
             --build-arg VCS_REF=${GITHUB_SHA::8} \
             ${TAGS} --file ./Dockerfile ./
   buildx:
+    name: Build and push
     needs: prepare_run
     if: needs.prepare_run.outputs.should_build == 'yes'
     runs-on: ubuntu-latest
     steps:
+      -
+        name: Checkout repo
+        uses: actions/checkout@v2
       -
         name: Set up Docker Buildx
         uses: crazy-max/ghaction-docker-buildx@v3
