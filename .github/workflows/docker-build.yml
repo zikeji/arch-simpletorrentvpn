@@ -19,8 +19,6 @@ jobs:
         name: Prepare variables and run schedule check
         id: prepare
         run: |
-          apt-get update >/dev/null 2>&1
-          apt-get install -y jq >/dev/null 2>&1
           DOCKER_IMAGE=zikeji/arch-simpletorrentvpn
           DOCKER_PLATFORMS=linux/amd64,linux/arm64
           SHOULD_CANCEL="no"
