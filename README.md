@@ -1,5 +1,7 @@
 # arch-simpletorrentvpn
 
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/zikeji/arch-simpletorrentvpn/docker-build)][dockerhub]
+[![Docker Image Version (latest by date)](https://img.shields.io/docker/v/zikeji/arch-simpletorrentvpn)][dockerhub]
 [![Docker Pulls](https://img.shields.io/docker/pulls/zikeji/arch-simpletorrentvpn)][dockerhub]
 [![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/zikeji/arch-simpletorrentvpn)][dockerhub]
 [![Docker Stars](https://img.shields.io/docker/stars/zikeji/arch-simpletorrentvpn)][dockerhub]

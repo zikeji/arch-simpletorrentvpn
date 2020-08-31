@@ -13,14 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -
-        name: Checkout
+        name: Checkout repo
         uses: actions/checkout@v2
       -
-        name: Prepare
+        name: Prepare variables and run schedule check
         id: prepare
         run: |
+          apt-get update >/dev/null 2>&1
+          apt-get install -y jq >/dev/null 2>&1
           DOCKER_IMAGE=zikeji/arch-simpletorrentvpn
           DOCKER_PLATFORMS=linux/amd64,linux/arm64
+          SHOULD_CANCEL="no"
           VERSION=latest
 
           if [[ $GITHUB_REF == refs/tags/* ]]; then
@@ -28,7 +31,11 @@ jobs:
           fi
 
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            VERSION=`curl -sI https://github.com/boypt/simple-torrent/releases/latest | grep location | grep -E -o '[0-9\.]{5,}'`
+            LATEST_REPO_VERSION=$(curl -sI https://github.com/boypt/simple-torrent/releases/latest | grep location | grep -E -o '[0-9\.]{5,}')
+            LATEST_HUB_VERSION=$(curl https://hub.docker.com/v2/repositories/zikeji/arch-simpletorrentvpn/tags 2>/dev/null | tac | jq -r '[.results[] | select(.name | test("^[0-9]"))] | sort_by(.name | split(".") | map(tonumber)) | reverse | first | .name')
+            if [[ "$LATEST_REPO_VERSION" == "$LATEST_HUB_VERSION" ]]; then
+              SHOULD_CANCEL="yes"
+            fi
           fi
 
           TAGS="--tag ${DOCKER_IMAGE}:${VERSION}"
@@ -37,6 +44,7 @@ jobs:
           fi
 
           echo ::set-output name=docker_image::${DOCKER_IMAGE}
+          echo ::set-output name=should_cancel::${SHOULD_CANCEL}
           echo ::set-output name=version::${VERSION}
           echo ::set-output name=buildx_args::--platform ${DOCKER_PLATFORMS} \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
@@ -45,6 +53,23 @@ jobs:
             --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
             --build-arg VCS_REF=${GITHUB_SHA::8} \
             ${TAGS} --file ./Dockerfile ./
+      -
+        name: Cancel workflow run if needed
+        uses: actions/github-script@v3
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            if (context.steps.prepare.outputs.should_cancel === 'yes') {
+              console.log('Cancelling ...');
+              const run_id = "${{ github.run_id }}";
+              await github.actions.cancelWorkflowRun({ owner, repo, run_id });
+            }
+      -
+        name: Waiting for cancellation
+        run: sleep 60
+        if: steps.prepare.outputs.should_cancel == 'yes'
+      - name: Should continue?
+        run: test "${{ steps.prepare.outputs.should_cancel }}" = "yes"
       - 
         name: Push README to DockerHub
         uses: christian-korneck/update-container-description-action@v1
